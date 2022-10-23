@@ -1,3 +1,4 @@
+from asyncio.windows_events import NULL
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
@@ -43,30 +44,35 @@ class Inventory(BaseModel):
 
 products = {}
 
-inventory = {}
+inventory = []
 
 #######################################
 
 @app.post("/product/transaction")
 async def product_transaction(product_id: int, qty: int):
-    return {"message": "Hello World"}
+    if (product_id in products):
+        products[product_id][qty] += qty
+        inventory.append({"product_id" : product_id, "quantity" : qty}) 
+    else:
+        raise HTTPException(status_code=404, detail="product does not exist")
 
 @app.post("/product")
 async def create_product(product: Product):
     # Criar um produto
-    if (product.id in products) :
+    if (product.id in products):
         raise HTTPException(status_code=404, detail="product already exists")
-    else :
+    else:
         products[product.id] = product
         return product
 
 @app.put("/product")
 async def update_product(Product):
+    
     return {"message": "Hello World"}
 
 @app.get("/product/{product_id}")
 async def get_product(product_id: int):
-    if (product_id in products) :
+    if (product_id in products):
         return products[product_id]
     else :
         raise HTTPException(status_code=404, detail="product does not exist")
@@ -76,9 +82,12 @@ async def list_products():
     return {"message": "Hello World"}
 
 @app.delete("/product")
-async def delete_product():
-    return {"message": "Hello World"}
+async def delete_product(product_id: int):
+    if (product_id in products) :
+        del products[product_id]
+    else :
+        raise HTTPException(status_code=404, detail="product does not exist")
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Hello World"}
