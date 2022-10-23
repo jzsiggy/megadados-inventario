@@ -1,6 +1,6 @@
-from asyncio.windows_events import NULL
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from fastapi.encoders import jsonable_encoder
 
 #######################################
 
@@ -48,17 +48,31 @@ inventory = []
 
 #######################################
 
+@app.get("/inventory/all")
+async def list_inventory():
+    return inventory
+
+@app.get("/product/all")
+async def list_products():
+    return products
+
 @app.post("/product/transaction")
 async def product_transaction(product_id: int, qty: int):
     if (product_id in products):
-        products[product_id][qty] += qty
+        product = dict( products[product_id] )
+
+        new_qty = product['quantity'] + qty
+        product['quantity'] = new_qty
+
+        products[product_id] = jsonable_encoder(product)
+
         inventory.append({"product_id" : product_id, "quantity" : qty}) 
+        return product
     else:
         raise HTTPException(status_code=404, detail="product does not exist")
 
 @app.post("/product")
 async def create_product(product: Product):
-    # Criar um produto
     if (product.id in products):
         raise HTTPException(status_code=404, detail="product already exists")
     else:
@@ -67,7 +81,6 @@ async def create_product(product: Product):
 
 @app.put("/product")
 async def update_product(Product):
-    
     return {"message": "Hello World"}
 
 @app.get("/product/{product_id}")
@@ -76,10 +89,6 @@ async def get_product(product_id: int):
         return products[product_id]
     else :
         raise HTTPException(status_code=404, detail="product does not exist")
-
-@app.get("/product/all")
-async def list_products():
-    return {"message": "Hello World"}
 
 @app.delete("/product")
 async def delete_product(product_id: int):
@@ -90,4 +99,4 @@ async def delete_product(product_id: int):
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Hello World"}
