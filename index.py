@@ -9,6 +9,7 @@ app = FastAPI()
 
 #######################################
 
+# Declarando a base do modelo de produto e um exemplo dele
 class Product(BaseModel):
     id: Union [int, None] = None
     name: Union [str, None] = None
@@ -27,6 +28,7 @@ class Product(BaseModel):
             }
         }
 
+# Declarando a base do modelo de estoque e um exemplo dele
 class Inventory(BaseModel):
     product_id: int
     quantity: int
@@ -39,22 +41,27 @@ class Inventory(BaseModel):
             }
         }
 
-#######################################
+###################################### INICIALIZANDO PRODUTO E ESTOQUE ######################################
 
 products = {}
 
 inventory = []
 
-#######################################
+###################################### INPLEMENTAÇÃO DO CRUD ######################################
 
+
+
+# GET -> mostra o estoque com os produtos
 @app.get("/inventory/all")
 async def list_inventory():
     return inventory
 
+# GET -> todos os produtos do estoque
 @app.get("/product/all")
 async def list_products():
     return products
 
+#POST -> movimentação dos produtos dentro do estoque; adicionar produtos etc
 @app.post("/product/transaction")
 async def product_transaction(movement: Inventory):
     product_id = movement.product_id
@@ -73,6 +80,7 @@ async def product_transaction(movement: Inventory):
     else:
         raise HTTPException(status_code=404, detail="product does not exist")
 
+# POST -> cria um produto qualquer
 @app.post("/product")
 async def create_product(product: Product):
     if (product.id in products):
@@ -81,6 +89,7 @@ async def create_product(product: Product):
         products[product.id] = product
         return product
 
+# PATCH -> atualiza produto com modificações desejadas
 @app.patch("/product/{product_id}", response_model=Product)
 async def update_product(product_id: int, product: Product):
     if (product_id in products):
@@ -93,6 +102,7 @@ async def update_product(product_id: int, product: Product):
     else:
         raise HTTPException(status_code=404, detail="product does not exist")
 
+# GET -> recebe o produto
 @app.get("/product/{product_id}")
 async def get_product(product_id: int):
     if (product_id in products):
@@ -100,6 +110,7 @@ async def get_product(product_id: int):
     else :
         raise HTTPException(status_code=404, detail="product does not exist")
 
+# DELETE -> apaga o produto
 @app.delete("/product")
 async def delete_product(product_id: int):
     if (product_id in products) :
