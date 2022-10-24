@@ -70,9 +70,13 @@ async def product_transaction(movement: Inventory):
     if (product_id in products):
         product = dict( products[product_id] )
 
-        new_qty = product['quantity'] + qty
-        product['quantity'] = new_qty
-
+        # Condição para tratar estoque negativo.
+        if product['quantity'] + qty >= 0:
+            new_qty = product['quantity'] + qty
+            product['quantity'] = new_qty
+        else:
+            raise HTTPException(status_code=404, detail="not enough products")
+        
         products[product_id] = jsonable_encoder(product)
 
         inventory.append({"product_id" : product_id, "quantity" : qty}) 
