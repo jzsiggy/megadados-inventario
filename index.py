@@ -66,11 +66,13 @@ async def create_product(product: schemas.Product, db: Session = Depends(get_db)
 # PATCH -> atualiza produto com modificações desejadas
 @app.patch("/product/{product_id}")
 async def update_product(product_id: int, product: schemas.Product, db: Session = Depends(get_db)):
-    existing_product = utils.get_product_by_name(db, name=product.name)
+    existing_product = utils.get_product(db, product_id=product_id)
     if not existing_product: 
-        raise HTTPException(status_code=404, detail="product already exists")
+        raise HTTPException(status_code=404, detail="product does not exist exists")
 
     utils.update_product(db=db, product_id=product_id, product=product)
+
+    return {"message": "product updated successfully"}
 
 # GET -> busca o produto
 @app.get("/product/{product_id}")
@@ -87,7 +89,8 @@ async def delete_product(product_id: int, db: Session = Depends(get_db)):
     if not product:
         raise HTTPException(status_code=404, detail="product does not exist")
 
-    return utils.delete_product(db, product_id);
+    utils.delete_product(db, product_id)
+    return {"message": "prooduct deleted successfully"}
 
 @app.get("/")
 async def root():
