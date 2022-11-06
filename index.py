@@ -42,22 +42,17 @@ async def product_transaction(movement: schemas.Inventory, db: Session = Depends
     product_id = movement.product_id
     qty = movement.quantity
 
-    if (product_id in products):
-        product = dict( products[product_id] )
+    product = utils.get_product(db, product_id=product_id)
 
-        # Condição para tratar estoque negativo.
-        if product['quantity'] + qty >= 0:
-            new_qty = product['quantity'] + qty
-            product['quantity'] = new_qty
-        else:
-            raise HTTPException(status_code=404, detail="can't move quantity")
-        
-        products[product_id] = jsonable_encoder(product)
+    if not product: raise HTTPException(status_code=404, detail="product does not exist")
+    if product.quantity < qty: raise HTTPException(status_code=404, detail="not enough supply")
 
-        inventory.append({"product_id" : product_id, "quantity" : qty}) 
-        return product
-    else:
-        raise HTTPException(status_code=404, detail="product does not exist")
+
+    new_qty = product.quantity + qty
+    utils.create_inventory_movement(db=db, movement=movement)
+    utils.update_product(db=db, product_id=product_id, product=schemas.Product(quantity=new_qty))
+
+    return product
 
 # POST -> cria um produto qualquer
 @app.post("/product")
@@ -68,18 +63,14 @@ async def create_product(product: schemas.Product, db: Session = Depends(get_db)
     
     return utils.create_product(db=db, product=product)
 
-# # PATCH -> atualiza produto com modificações desejadas
-# @app.patch("/product/{product_id}", response_model=Product)
-# async def update_product(product_id: int, product: Product):
-#     if (product_id in products):
-#         stored_product_data = products[product_id]
-#         stored_product_model = Product(**stored_product_data)
-#         update_data = product.dict(exclude_unset=True)
-#         updated_product = stored_product_model.copy(update=update_data)
-#         products[product_id] = jsonable_encoder(updated_product)
-#         return updated_product
-#     else:
-#         raise HTTPException(status_code=404, detail="product does not exist")
+# PATCH -> atualiza produto com modificações desejadas
+@app.patch("/product/{product_id}")
+async def update_product(product_id: int, product: schemas.Product, db: Session = Depends(get_db)):
+    existing_product = utils.get_product_by_name(db, name=product.name)
+    if not existing_product: 
+        raise HTTPException(status_code=404, detail="product already exists")
+
+    utils.update_product(db=db, product_id=product_id, product=product)
 
 # GET -> busca o produto
 @app.get("/product/{product_id}")
@@ -91,12 +82,12 @@ async def get_product(product_id: int, db: Session = Depends(get_db)):
 
 # DELETE -> apaga o produto
 @app.delete("/product")
-async def delete_product(product_id: int):
-    if (product_id in products) :
-        del products[product_id]
-        return products
-    else :
+async def delete_product(product_id: int, db: Session = Depends(get_db)):
+    product = utils.get_product(db, product_id=product_id)
+    if not product:
         raise HTTPException(status_code=404, detail="product does not exist")
+
+    return utils.delete_product(db, product_id);
 
 @app.get("/")
 async def root():
