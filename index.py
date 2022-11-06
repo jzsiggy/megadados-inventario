@@ -13,8 +13,6 @@ from fastapi.encoders import jsonable_encoder
 
 app = FastAPI()
 
-###################################### INICIALIZANDO PRODUTO E ESTOQUE ######################################
-
 def get_db():
     db = database.SessionLocal()
     try:
