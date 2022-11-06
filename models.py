@@ -1,26 +1,25 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float
 from sqlalchemy.orm import relationship
 
-from .database import Base
+import database
 
 
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
-    is_active = Column(Boolean, default=True)
-
-    items = relationship("Item", back_populates="owner")
-
-
-class Item(Base):
-    __tablename__ = "items"
+class Product(database.Base):
+    __tablename__ = "product"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True)
-    description = Column(String, index=True)
-    owner_id = Column(Integer, ForeignKey("users.id"))
+    name = Column(String(255), unique=True, index=True)
+    description = Column(String(255))
+    price = Column(Float, default=True)
+    quantity = Column(Integer, default=True)
+    removed = Column(Boolean)
 
-    owner = relationship("User", back_populates="items")
+
+class Inventory(database.Base):
+    __tablename__ = "inventory"
+
+    id = Column(Integer, primary_key=True, index=True)
+    quantity = Column(Integer, index=True)
+    product_id = Column(Integer, ForeignKey("product.id"))
+
+    rel = relationship("Product", backref="inventory", primaryjoin="Product.id == Inventory.product_id")
